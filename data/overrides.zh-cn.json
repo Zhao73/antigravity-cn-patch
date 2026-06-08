@@ -1,0 +1,112 @@
+{
+  "vs/base/common/constants/appMetadata": {
+    "app.description": "Google Antigravity - 体验起飞"
+  },
+  "vs/editor/contrib/antigravityAnnotations/browser/antigravityAnnotations.contribution": {
+    "manageAnnotations.label": "管理注释",
+    "antigravity.cascade": "Agent"
+  },
+  "vs/editor/contrib/antigravityEditorInfoWidget/browser/debug/antigravityDebugInfoWidget": {
+    "antigravity.toggleDebugInfoWidget": "切换调试信息小组件"
+  },
+  "vs/editor/contrib/gotoError/browser/gotoError": {
+    "antigravityExplainProblem.label": "解释并修复问题"
+  },
+  "vs/editor/contrib/hover/browser/markerHoverParticipant": {
+    "antigravity explain and fix problem": "解释并修复"
+  },
+  "vs/platform/antigravityAnalytics/electron-browser/antigravityAnalyticsAction": {
+    "sendAnalyticsAction": "发送分析数据",
+    "uploadErrorAction": "上传错误"
+  },
+  "vs/platform/antigravityAuthNew/electron-browser/antigravityLoginWithRedirect": {
+    "loginWithRedirect": "登录 Antigravity"
+  },
+  "vs/platform/jetskiAgentWindow/common/jetskiAgentMode.contribution": {
+    "jetskiConfiguration": "Antigravity 配置",
+    "antigravity.enableAgentMode": "启用 Agent 模式"
+  },
+  "vs/platform/jetskiAgentWindow/electron-browser/agentManagerDevtools": {
+    "toggleManagerDevTools": "切换 Agent 管理器开发者工具",
+    "IDE": "IDE"
+  },
+  "vs/platform/jetskiAgentWindow/electron-browser/settingsDevtools": {
+    "toggleSettingsDevTools": "切换设置开发者工具",
+    "IDE": "IDE"
+  },
+  "vs/platform/update/common/updateNudgeUtils": {
+    "download update_1": "下载更新",
+    "DownloadingUpdate": "正在下载更新",
+    "installUpdate...": "安装更新...",
+    "installingUpdate": "正在安装更新",
+    "restartToUpdate": "重启以更新"
+  },
+  "vs/workbench/browser/parts/editor/editorGroupAntigravityWelcome": {
+    "watermark.switchToAgentManager": "切换到 Agent 管理器",
+    "watermark.chatWithCode": "与代码聊天",
+    "watermark.triggerCommand": "触发命令",
+    "OnboardingStepUnchecked": "未完成",
+    "OnboardingStepChecked": "已完成"
+  },
+  "vs/workbench/browser/parts/globalCompositeBar": {
+    "antigravity settings": "Antigravity 设置",
+    "manageDynamicAuthProviders": "管理身份验证提供程序",
+    "noAccounts": "没有账户"
+  },
+  "vs/workbench/contrib/antigravityFeedback/browser/antigravityFeedback.contribution": {
+    "sendFeedback": "发送反馈",
+    "sendFeedbackTitle": "发送 Antigravity 反馈",
+    "reportIssue": "报告问题",
+    "openSupport": "打开支持页面"
+  },
+  "vs/workbench/contrib/antigravityMcpService/browser/antigravityMcp.contribution": {
+    "mcp": "MCP",
+    "mcpServers": "MCP 服务器",
+    "addMcpServer": "添加 MCP 服务器",
+    "editMcpServer": "编辑 MCP 服务器",
+    "removeMcpServer": "移除 MCP 服务器"
+  },
+  "vs/workbench/contrib/antigravityOnboarding/browser/antigravityOnboarding.contribution": {
+    "openAgentManager": "打开 Agent 管理器",
+    "openSettings": "打开设置",
+    "signIn": "登录",
+    "getStarted": "开始使用",
+    "skip": "跳过"
+  },
+  "vs/workbench/contrib/antigravityStatusBarSettings/browser/antigravitySettingsPage.contribution": {
+    "settings": "设置",
+    "antigravitySettings": "Antigravity 设置",
+    "openSettings": "打开设置"
+  },
+  "vs/workbench/contrib/chat/browser/actions/chatActions": {
+    "newChat": "新建聊天",
+    "clearChat": "清空聊天",
+    "stopResponse": "停止响应",
+    "rerunRequest": "重新运行请求"
+  },
+  "vs/workbench/contrib/chat/browser/chat.contribution": {
+    "chat": "聊天",
+    "openChat": "打开聊天",
+    "focusChat": "聚焦聊天",
+    "newChat": "新建聊天"
+  },
+  "vs/workbench/contrib/chat/browser/chatSessions": {
+    "chatSessions": "聊天会话",
+    "newSession": "新建会话",
+    "deleteSession": "删除会话",
+    "renameSession": "重命名会话"
+  },
+  "vs/workbench/contrib/chat/common/tools/manageTodoListTool": {
+    "todoList": "待办列表",
+    "addTodo": "添加待办",
+    "updateTodo": "更新待办",
+    "removeTodo": "移除待办"
+  },
+  "vs/workbench/contrib/jetskiAgentManager/browser/jetskiAgentManager.contribution": {
+    "openAgentManager": "打开 Agent 管理器",
+    "agentManager": "Agent 管理器"
+  },
+  "vs/workbench/contrib/openInAgentManager/browser/openInAgentManager.contribution": {
+    "openInAgentManager": "在 Agent 管理器中打开"
+  }
+}

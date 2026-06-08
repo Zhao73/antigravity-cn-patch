@@ -1,0 +1,58 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { applyPatch } from '../src/apply.js';
+import { resolveAntigravityPaths } from '../src/paths.js';
+
+describe('apply patch workflow', () => {
+  it('does not write generated extension files during dry-run', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-cn-apply-'));
+    const installDir = path.join(root, 'Program');
+    const appDataDir = path.join(root, 'AppData');
+    const extensionsDir = path.join(root, 'extensions');
+    const upstreamRoot = path.join(root, 'upstream');
+    fs.mkdirSync(path.join(installDir, 'resources', 'app', 'out'), { recursive: true });
+    fs.mkdirSync(path.join(upstreamRoot, 'translations', 'extensions'), { recursive: true });
+
+    fs.writeFileSync(path.join(installDir, 'resources', 'app', 'out', 'nls.keys.json'), JSON.stringify([
+      ['sample/module', ['hello']]
+    ]));
+    fs.writeFileSync(path.join(installDir, 'resources', 'app', 'out', 'nls.messages.json'), JSON.stringify([
+      'Hello'
+    ]));
+    fs.writeFileSync(path.join(upstreamRoot, 'package.json'), JSON.stringify({
+      engines: { vscode: '^1.104.0' },
+      contributes: {
+        localizations: [
+          {
+            languageId: 'zh-cn',
+            translations: [
+              { id: 'vscode', path: './translations/main.i18n.json' },
+              { id: 'vscode.sample', path: './translations/extensions/vscode.sample.i18n.json' }
+            ]
+          }
+        ]
+      }
+    }));
+    fs.writeFileSync(path.join(upstreamRoot, 'translations', 'main.i18n.json'), JSON.stringify({
+      version: '1.0.0',
+      contents: { 'sample/module': { hello: '你好' } }
+    }));
+    fs.writeFileSync(path.join(upstreamRoot, 'translations', 'extensions', 'vscode.sample.i18n.json'), '{}');
+
+    const paths = resolveAntigravityPaths({ installDir, appDataDir, extensionsDir });
+    const result = applyPatch({
+      paths,
+      upstreamRoot,
+      overrides: {},
+      dryRun: true
+    });
+
+    assert.equal(result.stats.upstreamKeys, 1);
+    assert.equal(fs.existsSync(result.extensionRoot), false);
+    assert.equal(fs.existsSync(paths.languagePacksPath), false);
+    assert.equal(fs.existsSync(paths.localePath), false);
+  });
+});
