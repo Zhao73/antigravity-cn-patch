@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { patchAsarUiBundles } from './asarPatch.js';
 import { buildMainTranslation, countCoverage } from './translation.js';
-import { backupFiles, writeLanguagePacksJson, writeLocaleJson } from './install.js';
+import { backupFiles, clearRuntimeCaches, writeLanguagePacksJson, writeLocaleJson } from './install.js';
+import { patchMainProcessAsar } from './mainProcessPatch.js';
 import { EXTENSION_ID, EXTENSION_VERSION, LOCALE, resolveAntigravityPaths } from './paths.js';
 import { copyExtensionTranslations, loadUpstreamLanguagePack } from './upstream.js';
 import { applyUiPatch, loadUiTranslations } from './uiPatch.js';
 
-export function applyPatch({
+export async function applyPatch({
   paths,
   upstreamRoot,
   overrides,
@@ -48,7 +50,7 @@ export function applyPatch({
     writeGeneratedPackageJson({ extensionRoot, upstreamPackage: upstream.packageJson });
     const backup = backupFiles({
       appDataDir: resolvedPaths.appDataDir,
-      extraFiles: resolvedPaths.uiBundlePaths
+      extraFiles: [resolvedPaths.appAsarPath, ...resolvedPaths.uiBundlePaths]
     });
     writeLanguagePacksJson({
       languagePacksPath: resolvedPaths.languagePacksPath,
@@ -63,7 +65,19 @@ export function applyPatch({
       bundlePaths: resolvedPaths.uiBundlePaths,
       translations: uiTranslations
     });
-    return { coverage, ...built, extensionRoot, translations, backup, uiPatch };
+    const asarPatch = await patchAsarUiBundles({
+      appAsarPath: resolvedPaths.appAsarPath,
+      relativeBundlePaths: resolvedPaths.asarBundleRelativePaths,
+      translations: uiTranslations
+    });
+    const mainProcessPatch = await patchMainProcessAsar({
+      appAsarPath: resolvedPaths.appAsarPath
+    });
+    const cache = clearRuntimeCaches({
+      appDataDir: resolvedPaths.appDataDir,
+      stamp: backup.createdAt
+    });
+    return { coverage, ...built, extensionRoot, translations, backup, uiPatch, asarPatch, mainProcessPatch, cache };
   }
 
   const uiPatch = applyUiPatch({
@@ -71,7 +85,17 @@ export function applyPatch({
     translations: uiTranslations,
     dryRun: true
   });
-  return { coverage, ...built, extensionRoot, translations, backup: null, uiPatch };
+  const asarPatch = await patchAsarUiBundles({
+    appAsarPath: resolvedPaths.appAsarPath,
+    relativeBundlePaths: resolvedPaths.asarBundleRelativePaths,
+    translations: uiTranslations,
+    dryRun: true
+  });
+  const mainProcessPatch = await patchMainProcessAsar({
+    appAsarPath: resolvedPaths.appAsarPath,
+    dryRun: true
+  });
+  return { coverage, ...built, extensionRoot, translations, backup: null, uiPatch, asarPatch, mainProcessPatch, cache: null };
 }
 
 function assertAntigravityFiles(paths) {

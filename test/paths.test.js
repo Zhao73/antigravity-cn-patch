@@ -10,11 +10,21 @@ describe('Antigravity path resolution', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-cn-paths-'));
     const installDir = path.join(root, 'Antigravity');
     fs.mkdirSync(path.join(installDir, 'resources', 'app', 'out'), { recursive: true });
+    fs.writeFileSync(path.join(installDir, 'resources', 'app.asar'), 'asar');
 
     const paths = resolveAntigravityPaths({ installDir });
 
     assert.equal(paths.appRoot, path.join(installDir, 'resources', 'app'));
+    assert.equal(paths.appAsarPath, path.join(installDir, 'resources', 'app.asar'));
     assert.equal(paths.nlsKeysPath, path.join(paths.appRoot, 'out', 'nls.keys.json'));
+    assert.deepEqual(paths.uiBundleRelativePaths, [
+      'out/main.js',
+      'out/jetskiAgent/main.js',
+      'out/vs/workbench/workbench.desktop.main.js'
+    ]);
+    assert.deepEqual(paths.asarBundleRelativePaths, [
+      'dist/preload.js'
+    ]);
     assert.deepEqual(paths.uiBundlePaths, [
       path.join(paths.appRoot, 'out', 'main.js'),
       path.join(paths.appRoot, 'out', 'jetskiAgent', 'main.js'),
@@ -26,10 +36,12 @@ describe('Antigravity path resolution', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-cn-paths-'));
     const installDir = path.join(root, 'Antigravity.app');
     fs.mkdirSync(path.join(installDir, 'Contents', 'Resources', 'app', 'out'), { recursive: true });
+    fs.writeFileSync(path.join(installDir, 'Contents', 'Resources', 'app.asar'), 'asar');
 
     const paths = resolveAntigravityPaths({ installDir });
 
     assert.equal(paths.appRoot, path.join(installDir, 'Contents', 'Resources', 'app'));
+    assert.equal(paths.appAsarPath, path.join(installDir, 'Contents', 'Resources', 'app.asar'));
     assert.equal(paths.packageJsonPath, path.join(paths.appRoot, 'package.json'));
   });
 });

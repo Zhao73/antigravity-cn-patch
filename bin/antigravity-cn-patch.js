@@ -2,8 +2,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as asar from '@electron/asar';
 import { applyPatch } from '../src/apply.js';
+import { countPatchedAsarBundles } from '../src/asarPatch.js';
 import { latestBackup, restoreBackup } from '../src/install.js';
+import { MENU_PATCH_HELPER_START } from '../src/mainProcessPatch.js';
 import { DEFAULT_LANGUAGE_PACK_VERSION, findLocalVsCodeLanguagePack, resolveAntigravityPaths } from '../src/paths.js';
 import { downloadMarketplaceLanguagePack, loadUpstreamLanguagePack } from '../src/upstream.js';
 import { countCoverage } from '../src/translation.js';
@@ -48,7 +51,7 @@ async function runApply(options) {
   const uiTranslations = options.uiTranslations
     ? JSON.parse(fs.readFileSync(path.resolve(options.uiTranslations), 'utf8'))
     : undefined;
-  const result = applyPatch({
+  const result = await applyPatch({
     paths,
     upstreamRoot,
     overrides,
@@ -64,6 +67,9 @@ async function runApply(options) {
   console.log(`Generated fallbacks: ${result.stats.fallbackKeys}`);
   console.log(`Generated extension: ${result.extensionRoot}`);
   printUiPatchSummary(result.uiPatch);
+  printAsarPatchSummary(result.asarPatch);
+  printMainProcessPatchSummary(result.mainProcessPatch);
+  printCacheSummary(result.cache);
   if (options.dryRun) {
     console.log('Dry run only; no files were changed.');
   } else {
@@ -92,7 +98,14 @@ async function runStatus(options) {
   console.log(`Current locale: ${locale.locale ?? '(unset)'}`);
   const existingBundles = paths.uiBundlePaths.filter(filePath => fs.existsSync(filePath));
   const patchedBundles = existingBundles.filter(filePath => fs.readFileSync(filePath, 'utf8').includes(UI_PATCH_START));
-  console.log(`UI bundle patch: ${patchedBundles.length}/${existingBundles.length} bundle(s) patched`);
+  const asarStatus = countPatchedAsarBundles({
+    appAsarPath: paths.appAsarPath,
+    relativeBundlePaths: paths.asarBundleRelativePaths,
+    marker: UI_PATCH_START
+  });
+  console.log(`Unpacked UI bundle patch: ${patchedBundles.length}/${existingBundles.length} bundle(s) patched`);
+  console.log(`App ASAR UI patch: ${asarStatus.patched}/${asarStatus.total} bundle(s) patched`);
+  console.log(`App menu patch: ${readAsarText(paths.appAsarPath, 'dist/menu.js').includes(MENU_PATCH_HELPER_START) ? 'patched' : 'missing'}`);
 }
 
 function runRestore(options) {
@@ -112,6 +125,33 @@ function printUiPatchSummary(uiPatch) {
   console.log(`UI bundles patched: ${changed}/${existing}`);
   if (uiPatch.skippedFiles.length > 0) {
     console.log(`UI bundles skipped: ${uiPatch.skippedFiles.length}`);
+  }
+}
+
+function printAsarPatchSummary(asarPatch) {
+  console.log(`App ASAR patched: ${asarPatch.changed ? 'yes' : 'no'}`);
+  if (asarPatch.skippedFiles.length > 0) {
+    console.log(`App ASAR bundles skipped: ${asarPatch.skippedFiles.length}`);
+  }
+}
+
+function printMainProcessPatchSummary(mainProcessPatch) {
+  console.log(`App menu patched: ${mainProcessPatch.changed ? 'yes' : 'no'}`);
+}
+
+function printCacheSummary(cache) {
+  if (!cache) {
+    return;
+  }
+  const changed = cache.results.filter(item => item.changed).length;
+  console.log(`Runtime caches cleared: ${changed}/${cache.results.length}`);
+}
+
+function readAsarText(appAsarPath, relativePath) {
+  try {
+    return asar.extractFile(appAsarPath, relativePath).toString('utf8');
+  } catch {
+    return '';
   }
 }
 

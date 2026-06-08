@@ -69,6 +69,7 @@ export function buildRuntimeTranslator(translations) {
   const translations = ${payload};
   const entries = Object.entries(translations);
   const attributes = ${JSON.stringify(ATTRIBUTES)};
+  const thinkingLevels = { High: '高', Medium: '中等', Low: '低' };
   const skipTags = new Set(['CODE', 'PRE', 'SCRIPT', 'STYLE', 'TEXTAREA']);
 
   function normalize(value) {
@@ -103,7 +104,13 @@ export function buildRuntimeTranslator(translations) {
         output = output.split(source).join(target);
       }
     }
-    return output;
+    return translateDynamic(output);
+  }
+
+  function translateDynamic(value) {
+    return value
+      .replace(/\\((High|Medium|Low)\\)/g, (_, level) => \`（\${thinkingLevels[level]}）\`)
+      .replace(/\\b(\\d+)mo\\b/g, (_, count) => \`\${count}个月\`);
   }
 
   function shouldSkip(node) {

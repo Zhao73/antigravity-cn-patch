@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { applyUiPatch, UI_PATCH_START } from '../src/uiPatch.js';
+import { applyUiPatch, buildRuntimeTranslator, UI_PATCH_START } from '../src/uiPatch.js';
 
 describe('Antigravity UI bundle patching', () => {
   it('injects a runtime Chinese translator and updates it idempotently', () => {
@@ -39,5 +39,13 @@ describe('Antigravity UI bundle patching', () => {
     assert.equal(afterSecond.split(UI_PATCH_START).length - 1, 1);
     assert.match(afterSecond, /新的对话/);
     assert.doesNotMatch(afterSecond, /新建对话/);
+  });
+
+  it('includes dynamic replacements for thinking levels and relative months', () => {
+    const runtime = buildRuntimeTranslator({ 'New Conversation': '新建对话' });
+
+    assert.match(runtime, /thinkingLevels/);
+    assert.match(runtime, /High/);
+    assert.match(runtime, /\\b\(\\d\+\)mo\\b/);
   });
 });

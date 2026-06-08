@@ -2,10 +2,11 @@
 
 A reversible Simplified Chinese patcher for Google Antigravity on Windows, macOS, and Linux.
 
-It applies two layers:
+It applies three layers:
 
 - A VS Code-compatible `zh-cn` language pack for Antigravity's workbench/NLS strings.
-- A small runtime translator injected into Antigravity's UI bundles for hardcoded Agent UI strings such as `New Conversation`, `Ask anything`, `Select Project`, and `Dismiss`.
+- A small runtime translator injected into unpacked Antigravity UI bundles.
+- The same runtime translator injected into the real `app.asar` bundle that Electron launches with `--app-path`.
 
 ## One-Click Install
 
@@ -21,7 +22,7 @@ macOS/Linux:
 ./install.sh
 ```
 
-Then fully quit and reopen Antigravity.
+The installer backs up `app.asar`, patches it, clears Electron runtime caches, then asks you to fully quit and reopen Antigravity.
 
 ## Manual Usage
 
@@ -42,7 +43,7 @@ node ./bin/antigravity-cn-patch.js apply --source-language-pack /path/to/languag
 node ./bin/antigravity-cn-patch.js restore
 ```
 
-The patcher creates a backup before changing user data or installed UI bundles.
+The patcher creates a backup before changing user data, unpacked UI bundles, or `app.asar`.
 
 ## Platform Paths
 
@@ -74,7 +75,7 @@ It does not ship Antigravity binaries, Antigravity resources, VSIX files, or cop
 node ./bin/antigravity-cn-patch.js status --no-download
 ```
 
-The status command reports both the registered `zh-cn` language pack and whether UI bundles contain the runtime patch marker.
+The status command reports the registered `zh-cn` language pack, unpacked UI bundle markers, and `app.asar` bundle markers.
 
 ## Sources
 

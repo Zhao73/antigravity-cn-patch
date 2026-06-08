@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import * as asar from '@electron/asar';
 import { applyPatch } from '../src/apply.js';
 import { resolveAntigravityPaths } from '../src/paths.js';
 import { UI_PATCH_START } from '../src/uiPatch.js';
 
 describe('apply patch workflow', () => {
-  it('does not write generated extension files during dry-run', () => {
+  it('does not write generated extension files during dry-run', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-cn-apply-'));
     const installDir = path.join(root, 'Program');
     const appDataDir = path.join(root, 'AppData');
@@ -44,7 +45,7 @@ describe('apply patch workflow', () => {
     fs.writeFileSync(path.join(upstreamRoot, 'translations', 'extensions', 'vscode.sample.i18n.json'), '{}');
 
     const paths = resolveAntigravityPaths({ installDir, appDataDir, extensionsDir });
-    const result = applyPatch({
+    const result = await applyPatch({
       paths,
       upstreamRoot,
       overrides: {},
@@ -57,7 +58,7 @@ describe('apply patch workflow', () => {
     assert.equal(fs.existsSync(paths.localePath), false);
   });
 
-  it('patches and backs up Antigravity UI bundles during apply', () => {
+  it('patches and backs up Antigravity UI bundles during apply', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-cn-apply-'));
     const installDir = path.join(root, 'Program');
     const appDataDir = path.join(root, 'AppData');
@@ -76,6 +77,15 @@ describe('apply patch workflow', () => {
     fs.writeFileSync(path.join(installDir, 'resources', 'app', 'out', 'main.js'), 'console.log("main");\n');
     fs.writeFileSync(path.join(installDir, 'resources', 'app', 'out', 'jetskiAgent', 'main.js'), 'console.log("agent");\n');
     fs.writeFileSync(path.join(installDir, 'resources', 'app', 'out', 'vs', 'workbench', 'workbench.desktop.main.js'), 'console.log("workbench");\n');
+    fs.mkdirSync(path.join(installDir, 'resources', 'app', 'dist'), { recursive: true });
+    fs.writeFileSync(path.join(installDir, 'resources', 'app', 'dist', 'preload.js'), 'console.log("preload");\n');
+    fs.writeFileSync(path.join(installDir, 'resources', 'app', 'dist', 'menu.js'), [
+      'function setupApplicationMenu(url) {',
+      '    const menu = electron_1.Menu.getApplicationMenu();',
+      '    electron_1.Menu.setApplicationMenu(menu);',
+      '}'
+    ].join('\n'));
+    await asar.createPackage(path.join(installDir, 'resources', 'app'), path.join(installDir, 'resources', 'app.asar'));
     fs.writeFileSync(path.join(upstreamRoot, 'package.json'), JSON.stringify({
       engines: { vscode: '^1.104.0' },
       contributes: {
@@ -95,7 +105,7 @@ describe('apply patch workflow', () => {
     }));
 
     const paths = resolveAntigravityPaths({ installDir, appDataDir, extensionsDir });
-    const result = applyPatch({
+    const result = await applyPatch({
       paths,
       upstreamRoot,
       overrides: {},
@@ -106,6 +116,9 @@ describe('apply patch workflow', () => {
 
     assert.match(fs.readFileSync(paths.uiBundlePaths[2], 'utf8'), new RegExp(UI_PATCH_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.equal(result.uiPatch.patchedFiles.length, 3);
+    assert.equal(result.asarPatch.changed, true);
+    assert.equal(result.mainProcessPatch.changed, true);
     assert.equal(result.backup.entries.some(entry => entry.target === paths.uiBundlePaths[2] && entry.existed), true);
+    assert.equal(result.backup.entries.some(entry => entry.target === paths.appAsarPath && entry.existed), true);
   });
 });

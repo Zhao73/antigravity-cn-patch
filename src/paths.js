@@ -43,21 +43,29 @@ export function defaultExtensionsDir() {
 export function resolveAntigravityPaths(options = {}) {
   const installDir = path.resolve(options.installDir ?? defaultInstallDir());
   const appRoot = resolveAppRoot(installDir);
+  const appAsarPath = resolveAppAsarPath({ installDir, appRoot });
   const appDataDir = path.resolve(options.appDataDir ?? defaultAppDataDir());
   const extensionsDir = path.resolve(options.extensionsDir ?? defaultExtensionsDir());
+  const uiBundleRelativePaths = [
+    'out/main.js',
+    'out/jetskiAgent/main.js',
+    'out/vs/workbench/workbench.desktop.main.js'
+  ];
+  const asarBundleRelativePaths = [
+    'dist/preload.js'
+  ];
   return {
     installDir,
     appRoot,
+    appAsarPath,
     appDataDir,
     extensionsDir,
     nlsKeysPath: path.join(appRoot, 'out', 'nls.keys.json'),
     nlsMessagesPath: path.join(appRoot, 'out', 'nls.messages.json'),
     packageJsonPath: path.join(appRoot, 'package.json'),
-    uiBundlePaths: [
-      path.join(appRoot, 'out', 'main.js'),
-      path.join(appRoot, 'out', 'jetskiAgent', 'main.js'),
-      path.join(appRoot, 'out', 'vs', 'workbench', 'workbench.desktop.main.js')
-    ],
+    uiBundleRelativePaths,
+    asarBundleRelativePaths,
+    uiBundlePaths: uiBundleRelativePaths.map(relativePath => path.join(appRoot, ...relativePath.split('/'))),
     languagePacksPath: path.join(appDataDir, 'languagepacks.json'),
     localePath: path.join(appDataDir, 'User', 'locale.json')
   };
@@ -77,6 +85,16 @@ export function resolveAppRoot(installDir) {
   }
 
   return candidates[0];
+}
+
+export function resolveAppAsarPath({ installDir, appRoot }) {
+  const candidates = [
+    path.join(installDir, 'resources', 'app.asar'),
+    path.join(installDir, 'Contents', 'Resources', 'app.asar'),
+    path.join(path.dirname(appRoot), 'app.asar')
+  ];
+
+  return candidates.find(candidate => fs.existsSync(candidate)) ?? candidates[0];
 }
 
 export function findLocalVsCodeLanguagePack() {

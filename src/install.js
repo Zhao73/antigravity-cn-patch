@@ -50,6 +50,32 @@ export function restoreBackup(backupOrPath) {
   }
 }
 
+export function clearRuntimeCaches({ appDataDir, stamp = timestamp() }) {
+  const cacheNames = ['Code Cache', 'CachedData', 'Cache'];
+  const backupDir = path.join(appDataDir, 'antigravity-cn-patch-cache-backups', stamp);
+  const results = [];
+
+  for (const cacheName of cacheNames) {
+    const source = path.join(appDataDir, cacheName);
+    const target = path.join(backupDir, cacheName);
+    if (!fs.existsSync(source)) {
+      results.push({ cacheName, changed: false, reason: 'missing' });
+      continue;
+    }
+
+    try {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.rmSync(target, { recursive: true, force: true });
+      fs.renameSync(source, target);
+      results.push({ cacheName, changed: true, backup: target });
+    } catch (error) {
+      results.push({ cacheName, changed: false, reason: error.message });
+    }
+  }
+
+  return { backupDir, results };
+}
+
 export function writeLanguagePacksJson({
   languagePacksPath,
   locale,
