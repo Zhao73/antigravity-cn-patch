@@ -60,6 +60,21 @@ describe('translation merging', () => {
     }), /Missing 3 translations/);
   });
 
+  it('uses Chinese-only placeholders for unknown fallback strings', () => {
+    const result = buildMainTranslation({
+      keys: [['sample/module', ['someEnglishKey']]],
+      messages: ['Some untranslated English text'],
+      upstream: { version: '1.0.0', contents: {} },
+      overrides: {},
+      allowFallback: true
+    });
+
+    const value = result.translation.contents['sample/module'].someEnglishKey;
+    assert.match(value, /^待补译项 [a-z0-9]{7}$/);
+    assert.equal(value.includes('English'), false);
+    assert.equal(value.includes('someEnglishKey'), false);
+  });
+
   it('counts upstream coverage without mutating inputs', () => {
     const coverage = countCoverage({ keys: antigravityKeys, upstream });
 

@@ -104,11 +104,11 @@ export function buildMainTranslation({
   };
 }
 
-export function fallbackTranslation({ key, message }) {
+export function fallbackTranslation({ module, key, message }) {
   const normalized = normalizeMessage(message);
 
   if (/^%[\w.-]+%$/.test(normalized)) {
-    return normalized;
+    return placeholderName(normalized);
   }
 
   const byMessage = {
@@ -136,7 +136,7 @@ export function fallbackTranslation({ key, message }) {
     return byMessage[normalized];
   }
 
-  return `待补译: ${humanizeKey(key)}`;
+  return `待补译项 ${shortStableId(`${module}/${key}`)}`;
 }
 
 function normalizeMessage(message) {
@@ -149,10 +149,27 @@ function normalizeMessage(message) {
   return String(message ?? '');
 }
 
-function humanizeKey(key) {
-  return String(key)
-    .replace(/[_-]+/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/\s+/g, ' ')
-    .trim() || '未命名项目';
+function placeholderName(value) {
+  const names = {
+    '%colors.added%': '新增项颜色',
+    '%colors.modified%': '修改项颜色',
+    '%colors.deleted%': '删除项颜色',
+    '%colors.untracked%': '未跟踪项颜色',
+    '%colors.renamed%': '重命名项颜色',
+    '%colors.ignored%': '忽略项颜色',
+    '%colors.stageModified%': '暂存修改项颜色',
+    '%colors.stageDeleted%': '暂存删除项颜色',
+    '%colors.conflict%': '冲突项颜色',
+    '%colors.submodule%': '子模块项颜色'
+  };
+  return names[value] ?? `待补译项 ${shortStableId(value)}`;
+}
+
+function shortStableId(value) {
+  let hash = 0x811c9dc5;
+  for (const char of String(value)) {
+    hash ^= char.codePointAt(0);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36).padStart(7, '0').slice(0, 7);
 }
