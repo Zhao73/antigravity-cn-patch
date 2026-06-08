@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export function backupFiles({ appDataDir, stamp = timestamp() }) {
+export function backupFiles({ appDataDir, stamp = timestamp(), extraFiles = [] }) {
   const backupDir = path.join(appDataDir, 'antigravity-cn-patch-backups', stamp);
   fs.mkdirSync(backupDir, { recursive: true });
 
@@ -17,9 +17,14 @@ export function backupFiles({ appDataDir, stamp = timestamp() }) {
       target: path.join(appDataDir, 'User', 'locale.json'),
       backup: path.join(backupDir, 'locale.json')
     }
-  ].map(entry => {
+  ].concat(extraFiles.map((filePath, index) => ({
+    name: `program-file-${index}`,
+    target: filePath,
+    backup: path.join(backupDir, 'program-files', `${index}-${path.basename(filePath)}`)
+  }))).map(entry => {
     const existed = fs.existsSync(entry.target);
     if (existed) {
+      fs.mkdirSync(path.dirname(entry.backup), { recursive: true });
       fs.copyFileSync(entry.target, entry.backup);
     }
     return { ...entry, existed };

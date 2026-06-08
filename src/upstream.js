@@ -37,17 +37,47 @@ export async function downloadMarketplaceLanguagePack({
     fs.rmSync(extractDir, { recursive: true, force: true });
   }
 
-  const result = spawnSync('powershell', [
-    '-NoProfile',
-    '-Command',
-    `Expand-Archive -LiteralPath ${quotePowerShell(zipPath)} -DestinationPath ${quotePowerShell(extractDir)} -Force`
-  ], { encoding: 'utf8' });
-
-  if (result.status !== 0) {
-    throw new Error(`Failed to extract VSIX with PowerShell: ${result.stderr || result.stdout}`);
-  }
+  extractZip({ zipPath, extractDir });
 
   return extensionDir;
+}
+
+export function extractZip({ zipPath, extractDir, platform = process.platform }) {
+  fs.mkdirSync(extractDir, { recursive: true });
+  const errors = [];
+
+  for (const candidate of zipExtractCommands({ zipPath, extractDir, platform })) {
+    const result = spawnSync(candidate.command, candidate.args, { encoding: 'utf8' });
+    if (result.status === 0) {
+      return;
+    }
+    errors.push(`${candidate.command}: ${result.stderr || result.stdout || `exit ${result.status}`}`);
+  }
+
+  throw new Error(`Failed to extract VSIX. Tried: ${errors.join(' | ')}`);
+}
+
+export function zipExtractCommands({
+  zipPath,
+  extractDir,
+  platform = process.platform
+}) {
+  const portable = [
+    { command: 'unzip', args: ['-q', zipPath, '-d', extractDir] },
+    { command: 'tar', args: ['-xf', zipPath, '-C', extractDir] }
+  ];
+  const powershell = {
+    command: 'powershell',
+    args: [
+      '-NoProfile',
+      '-Command',
+      `Expand-Archive -LiteralPath ${quotePowerShell(zipPath)} -DestinationPath ${quotePowerShell(extractDir)} -Force`
+    ]
+  };
+
+  return platform === 'win32'
+    ? [{ command: 'tar', args: ['-xf', zipPath, '-C', extractDir] }, powershell]
+    : portable;
 }
 
 export function copyExtensionTranslations({ upstreamRoot, outputRoot, translationEntries }) {

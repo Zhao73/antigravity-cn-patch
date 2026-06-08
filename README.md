@@ -1,57 +1,80 @@
 # Antigravity Chinese Patch
 
-A reversible Simplified Chinese language-pack patcher for Google Antigravity on Windows.
+A reversible Simplified Chinese patcher for Google Antigravity on Windows, macOS, and Linux.
 
-This project does **not** modify `Antigravity.exe`, `app.asar`, or installed program files. It installs a user-local VS Code-compatible language pack, registers `zh-cn` in Antigravity's user data, and keeps backups for restore.
+It applies two layers:
 
-## What It Changes
+- A VS Code-compatible `zh-cn` language pack for Antigravity's workbench/NLS strings.
+- A small runtime translator injected into Antigravity's UI bundles for hardcoded Agent UI strings such as `New Conversation`, `Ask anything`, `Select Project`, and `Dismiss`.
 
-- Writes a generated language pack under `%USERPROFILE%\.antigravity\extensions\codex.antigravity-cn-patch-0.1.0`
-- Updates `%APPDATA%\Antigravity\languagepacks.json`
-- Updates `%APPDATA%\Antigravity\User\locale.json`
+## One-Click Install
 
-## What It Does Not Ship
-
-- No Antigravity binaries or resources
-- No prepackaged VSIX files
-- No copied VS Code language-pack payload in this repository
-
-The patcher can read a local extracted VS Code Chinese language pack or download a matching VS Code 1.104 language pack at apply time. VS Code localization packs are MIT licensed; see the upstream repository: <https://github.com/microsoft/vscode-loc>.
-
-## Usage
+Windows PowerShell:
 
 ```powershell
+.\install.ps1
+```
+
+macOS/Linux:
+
+```bash
+./install.sh
+```
+
+Then fully quit and reopen Antigravity.
+
+## Manual Usage
+
+```bash
 npm test
-node .\bin\antigravity-cn-patch.js apply --prefer-download
+node ./bin/antigravity-cn-patch.js apply --prefer-download
 ```
 
-If you already have an extracted language pack:
+If you already have an extracted VS Code Simplified Chinese language pack:
 
-```powershell
-node .\bin\antigravity-cn-patch.js apply --source-language-pack "C:\path\to\language-pack\extension"
-```
-
-Then restart Antigravity.
-
-## Status
-
-```powershell
-node .\bin\antigravity-cn-patch.js status --no-download
+```bash
+node ./bin/antigravity-cn-patch.js apply --source-language-pack /path/to/language-pack/extension
 ```
 
 ## Restore
 
-```powershell
-node .\bin\antigravity-cn-patch.js restore
+```bash
+node ./bin/antigravity-cn-patch.js restore
 ```
 
-The restore command uses the latest backup in `%APPDATA%\Antigravity\antigravity-cn-patch-backups`.
+The patcher creates a backup before changing user data or installed UI bundles.
 
-## Translation Coverage
+## Platform Paths
 
-For Antigravity 2.0.11 / workbench 1.104.0, the matching VS Code 1.104 Simplified Chinese language pack covered 15,436 of 16,018 workbench keys, or 96.37%, in local testing. This project adds Antigravity-specific overrides and uses Chinese fallback placeholders for remaining untranslated keys so English does not silently leak back into the UI.
+Default install locations:
 
-Those fallback placeholders are intentionally visible as `待补译: ...`; they are invitations for future translation cleanup, not a claim that every string is polished.
+- Windows: `%LOCALAPPDATA%\Programs\Antigravity`
+- macOS: `/Applications/Antigravity.app`
+- Linux: `/usr/share/antigravity`, `/opt/Antigravity`, or `/opt/antigravity`
+
+Default user-data locations:
+
+- Windows: `%APPDATA%\Antigravity`
+- macOS: `~/Library/Application Support/Antigravity`
+- Linux: `${XDG_CONFIG_HOME:-~/.config}/Antigravity`
+
+Use `--install-dir`, `--app-data-dir`, or `--extensions-dir` if your installation is elsewhere.
+
+## What It Ships
+
+- Source code for the patcher.
+- Antigravity-specific translation overrides.
+- A runtime UI translation map.
+
+It does not ship Antigravity binaries, Antigravity resources, VSIX files, or copied Microsoft localization payloads. The language pack can be read locally or downloaded at install time.
+
+## Status
+
+```bash
+node ./bin/antigravity-cn-patch.js status --no-download
+```
+
+The status command reports both the registered `zh-cn` language pack and whether UI bundles contain the runtime patch marker.
 
 ## Sources
 

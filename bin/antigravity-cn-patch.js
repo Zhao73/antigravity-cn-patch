@@ -7,6 +7,7 @@ import { latestBackup, restoreBackup } from '../src/install.js';
 import { DEFAULT_LANGUAGE_PACK_VERSION, findLocalVsCodeLanguagePack, resolveAntigravityPaths } from '../src/paths.js';
 import { downloadMarketplaceLanguagePack, loadUpstreamLanguagePack } from '../src/upstream.js';
 import { countCoverage } from '../src/translation.js';
+import { UI_PATCH_START } from '../src/uiPatch.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -44,10 +45,14 @@ async function runApply(options) {
   const paths = resolveAntigravityPaths(options);
   const upstreamRoot = await resolveUpstreamRoot(options);
   const overrides = readOverrides(options.overrides);
+  const uiTranslations = options.uiTranslations
+    ? JSON.parse(fs.readFileSync(path.resolve(options.uiTranslations), 'utf8'))
+    : undefined;
   const result = applyPatch({
     paths,
     upstreamRoot,
     overrides,
+    uiTranslations,
     allowFallback: !options.strict,
     dryRun: options.dryRun
   });
@@ -58,6 +63,7 @@ async function runApply(options) {
   console.log(`Project overrides: ${result.stats.overrideKeys}`);
   console.log(`Generated fallbacks: ${result.stats.fallbackKeys}`);
   console.log(`Generated extension: ${result.extensionRoot}`);
+  printUiPatchSummary(result.uiPatch);
   if (options.dryRun) {
     console.log('Dry run only; no files were changed.');
   } else {
@@ -84,6 +90,9 @@ async function runStatus(options) {
   console.log(`Upstream coverage: ${coverage.matchedKeys}/${coverage.totalKeys} (${coverage.coveragePercent}%)`);
   console.log(`Registered zh-cn: ${Boolean(languagePacks['zh-cn'])}`);
   console.log(`Current locale: ${locale.locale ?? '(unset)'}`);
+  const existingBundles = paths.uiBundlePaths.filter(filePath => fs.existsSync(filePath));
+  const patchedBundles = existingBundles.filter(filePath => fs.readFileSync(filePath, 'utf8').includes(UI_PATCH_START));
+  console.log(`UI bundle patch: ${patchedBundles.length}/${existingBundles.length} bundle(s) patched`);
 }
 
 function runRestore(options) {
@@ -95,6 +104,15 @@ function runRestore(options) {
   restoreBackup(backupDir);
   console.log(`Restored backup: ${backupDir}`);
   console.log('Restart Antigravity to load the restored locale state.');
+}
+
+function printUiPatchSummary(uiPatch) {
+  const changed = uiPatch.patchedFiles.filter(file => file.changed).length;
+  const existing = uiPatch.patchedFiles.length;
+  console.log(`UI bundles patched: ${changed}/${existing}`);
+  if (uiPatch.skippedFiles.length > 0) {
+    console.log(`UI bundles skipped: ${uiPatch.skippedFiles.length}`);
+  }
 }
 
 async function resolveUpstreamRoot(options) {
@@ -172,6 +190,7 @@ Options:
   --language-pack-version <ver>  Marketplace language-pack version (default ${DEFAULT_LANGUAGE_PACK_VERSION})
   --no-download                  Use local language pack only
   --overrides <path>             Project override JSON path
+  --ui-translations <path>       Runtime UI string translation JSON path
   --strict                       Fail if any Antigravity keys are not translated by upstream/overrides
   --dry-run                      Build and report without writing files
   --backup <path>                Backup directory for restore

@@ -4,11 +4,13 @@ import { buildMainTranslation, countCoverage } from './translation.js';
 import { backupFiles, writeLanguagePacksJson, writeLocaleJson } from './install.js';
 import { EXTENSION_ID, EXTENSION_VERSION, LOCALE, resolveAntigravityPaths } from './paths.js';
 import { copyExtensionTranslations, loadUpstreamLanguagePack } from './upstream.js';
+import { applyUiPatch, loadUiTranslations } from './uiPatch.js';
 
 export function applyPatch({
   paths,
   upstreamRoot,
   overrides,
+  uiTranslations = loadUiTranslations(),
   allowFallback = true,
   dryRun = false
 }) {
@@ -44,7 +46,10 @@ export function applyPatch({
     fs.mkdirSync(path.dirname(translations.vscode), { recursive: true });
     fs.writeFileSync(translations.vscode, `${JSON.stringify(built.translation)}\n`);
     writeGeneratedPackageJson({ extensionRoot, upstreamPackage: upstream.packageJson });
-    const backup = backupFiles({ appDataDir: resolvedPaths.appDataDir });
+    const backup = backupFiles({
+      appDataDir: resolvedPaths.appDataDir,
+      extraFiles: resolvedPaths.uiBundlePaths
+    });
     writeLanguagePacksJson({
       languagePacksPath: resolvedPaths.languagePacksPath,
       locale: LOCALE,
@@ -54,10 +59,19 @@ export function applyPatch({
       label: '中文(简体)'
     });
     writeLocaleJson({ localePath: resolvedPaths.localePath, locale: LOCALE });
-    return { coverage, ...built, extensionRoot, translations, backup };
+    const uiPatch = applyUiPatch({
+      bundlePaths: resolvedPaths.uiBundlePaths,
+      translations: uiTranslations
+    });
+    return { coverage, ...built, extensionRoot, translations, backup, uiPatch };
   }
 
-  return { coverage, ...built, extensionRoot, translations, backup: null };
+  const uiPatch = applyUiPatch({
+    bundlePaths: resolvedPaths.uiBundlePaths,
+    translations: uiTranslations,
+    dryRun: true
+  });
+  return { coverage, ...built, extensionRoot, translations, backup: null, uiPatch };
 }
 
 function assertAntigravityFiles(paths) {

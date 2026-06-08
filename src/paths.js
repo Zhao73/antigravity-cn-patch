@@ -8,10 +8,31 @@ export const EXTENSION_VERSION = '0.1.0';
 export const LOCALE = 'zh-cn';
 
 export function defaultInstallDir() {
+  if (process.platform === 'darwin') {
+    return '/Applications/Antigravity.app';
+  }
+
+  if (process.platform === 'linux') {
+    for (const candidate of ['/usr/share/antigravity', '/opt/Antigravity', '/opt/antigravity']) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+    return '/usr/share/antigravity';
+  }
+
   return path.join(process.env.LOCALAPPDATA ?? path.join(os.homedir(), 'AppData', 'Local'), 'Programs', 'Antigravity');
 }
 
 export function defaultAppDataDir() {
+  if (process.platform === 'darwin') {
+    return path.join(os.homedir(), 'Library', 'Application Support', 'Antigravity');
+  }
+
+  if (process.platform === 'linux') {
+    return path.join(process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), '.config'), 'Antigravity');
+  }
+
   return path.join(process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming'), 'Antigravity');
 }
 
@@ -21,18 +42,41 @@ export function defaultExtensionsDir() {
 
 export function resolveAntigravityPaths(options = {}) {
   const installDir = path.resolve(options.installDir ?? defaultInstallDir());
+  const appRoot = resolveAppRoot(installDir);
   const appDataDir = path.resolve(options.appDataDir ?? defaultAppDataDir());
   const extensionsDir = path.resolve(options.extensionsDir ?? defaultExtensionsDir());
   return {
     installDir,
+    appRoot,
     appDataDir,
     extensionsDir,
-    nlsKeysPath: path.join(installDir, 'resources', 'app', 'out', 'nls.keys.json'),
-    nlsMessagesPath: path.join(installDir, 'resources', 'app', 'out', 'nls.messages.json'),
-    packageJsonPath: path.join(installDir, 'resources', 'app', 'package.json'),
+    nlsKeysPath: path.join(appRoot, 'out', 'nls.keys.json'),
+    nlsMessagesPath: path.join(appRoot, 'out', 'nls.messages.json'),
+    packageJsonPath: path.join(appRoot, 'package.json'),
+    uiBundlePaths: [
+      path.join(appRoot, 'out', 'main.js'),
+      path.join(appRoot, 'out', 'jetskiAgent', 'main.js'),
+      path.join(appRoot, 'out', 'vs', 'workbench', 'workbench.desktop.main.js')
+    ],
     languagePacksPath: path.join(appDataDir, 'languagepacks.json'),
     localePath: path.join(appDataDir, 'User', 'locale.json')
   };
+}
+
+export function resolveAppRoot(installDir) {
+  const candidates = [
+    path.join(installDir, 'resources', 'app'),
+    path.join(installDir, 'Contents', 'Resources', 'app'),
+    installDir
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, 'out'))) {
+      return candidate;
+    }
+  }
+
+  return candidates[0];
 }
 
 export function findLocalVsCodeLanguagePack() {
